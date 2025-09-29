@@ -10,4 +10,76 @@ library(dplyr)
 data <- read_excel("F:/arman/bologna/me/thesis/checlists/final islands.xlsx")
 View(data)
 
-# trendlines:
+# plot in linear model:
+
+ggplot(data, aes(x = area, y = body_mass, color = status)) +
+  geom_point(aes(shape = status, fill = status), size = 3, alpha = 0.7) +
+  scale_x_log10() +
+  scale_y_log10() +
+  geom_smooth(method = "lm", se = FALSE) +  # ⬅️ Separate line per group
+  scale_color_manual(values = c("Native" = "green", "Alien" = "red", "doubt (type)" = "black")) +
+  scale_fill_manual(values = c("Native" = "green", "Alien" = "red", "doubt (type)" = "black")) +
+  scale_shape_manual(values = c("Native" = 16, "Alien" = 16, "doubt (type)" = 16)) +
+  labs(
+    x = "Island Area (km²)",
+    y = "Body Mass (gr)",
+    title = "Body Mass vs Island Area by Status (trendlines)",
+    color = "Status",
+    shape = "Status"
+  )+
+  guides(
+    color = guide_legend(override.aes = list(shape = 16)),
+    fill = "none"  # optional: hide fill if not useful
+  )
+
+
+#######################
+#comparison of LM (linear model) with GLMM:
+##to decide between LM vs GLMM for our body mass-island area analysis.
+
+## Linear Model (LM):
+m_lm <- lm(log(body_mass) ~ log(area) * status, data = data)
+
+## Mixed Model (GLMM / LMM since body mass is continuous)
+install.packages("lme4")
+library(lme4)
+m_glmm <- lmer(log(body_mass) ~ log(area) * status + (1|species) + (1|island),
+               data = data)
+
+## Compare with a Likelihood Ratio Test (LRT)
+anova(m_lm, m_glmm)
+
+## Compare using AIC
+AIC(m_lm, m_glmm)
+
+## summary:
+summary(m_glmm)
+
+################################
+
+#body mass-area relationship using GLMM (Generalized linear mixed model):
+
+install.packages("lmerTest") # for p-values
+library(lmerTest)
+library(lme4)
+
+# 1. prepare data:
+
+## log-transform response and predictor:
+data$log_body_mass <- log(data$body_mass)
+data$log_area <- log(data$area)
+
+## scale predictors (optional but helps convergence)
+data$log_area_scaled <- scale(data$log_area)
+data$log_body_mass_scaled <- scale(data$log_body_mass)
+
+# 2. Fit the model (GLMM with species random effect):
+model1 <- lmer(log_body_mass_scaled ~ log_area_scaled * status + (1|species), data=data)
+summary(model1)
+
+# 3. check model assumptions:
+plot(model1)  # residuals vs fitted
+qqnorm(resid(model1))
+qqline(resid(model1))
+
+
