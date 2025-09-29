@@ -1,0 +1,65 @@
+------------# Richness ---------------------
+
+# raw species–island–status data:
+
+filtered_data <- data %>%
+  filter(status %in% c("Native", "Alien"))
+
+richness_by_status <- filtered_data %>%
+  group_by(island, area, status) %>%           #Split our data into groups based on island, area and status.
+                   
+  summarise(richness = n_distinct(species)) %>%            #counts the number of unique species in each group (species richness).      
+  ungroup()
+
+View(richness_by_status)
+
+
+# covert the table to a Wide Format Table:
+# make the columns named “Native_richness” and “Alien_richness” per island.
+
+install.packages("tidyr")
+library(tidyr)
+
+richness_wide <- richness_by_status %>%
+  pivot_wider(                                 
+    names_from = status,                      
+    values_from = richness,                   
+    values_fill = 0             # If an island has no data for one status (e.g., no alien species), fill that cell with 0 instead of NA.                  
+  ) %>%
+  rename(                                  
+    Native_richness = Native,                   
+    Alien_richness = Alien                      
+  )
+
+View(richness_wide)
+write.csv(richness_wide, "Native_vs_Alien_richness_per_island.csv", row.names = FALSE            #save new table to the file
+
+
+# Visualizing raw patterns:
+
+# make Bar Plot for richness per island
+
+ggplot(richness_by_status, aes(x = reorder(island, area), y = richness, fill = status)) +               # x = reorder(island, area): set the islands (on x-axis) based on their area, ascending
+  geom_bar(stat = "identity", position = "dodge") +                       
+  labs(
+    title = "Native vs Alien Mammal Richness per Island", 
+       x = "Island", y = "Species Richness") +
+  scale_fill_manual(values = c("Alien" = "red", "Native" = "green"))+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+# Stacked Bar Chart or proportional bar chart 
+## to compute proportion alien/native per island (alien richness ÷ total richness) to highlight invasion intensity
+
+ggplot(richness_by_status, aes(x = reorder(island, area), y = richness, fill = status)) +                      #This shows the total species richness per island, with native and alien stacked.
+  geom_bar(stat = "identity") +
+  labs(
+    x = "Island",
+    y = "Species Richness",
+    title = "Native vs Alien Species Richness (Stacked)"                          
+  ) +
+  scale_fill_manual(values = c("Alien" = "red", "Native" = "green")) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+# lets # sort highest alien proportion first, so invasion hotspots are at the left.
