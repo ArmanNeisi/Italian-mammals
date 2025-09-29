@@ -83,3 +83,8 @@ test_all
 test_Native
 test_alien
 
+## All p = 0.245 → not significant             ##The total mammal fauna across islands is not significantly more nested than what you’d expect if species were randomly shuffled
+## Natives p = 0.009 (significant)     ## Native mammals are significantly more nested than random.
+## Alien p = 0.013 (significant)           ## Alien mammals are also significantly nested, though at a lower absolute level than natives.
+## Negative SES values mean the observed nestedness is lower than expected under the null. But because p-values are significant, that difference is not due to chance.
+
