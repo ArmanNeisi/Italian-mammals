@@ -108,8 +108,8 @@ richness_by_status <- richness_by_status %>%                    # Add absolute a
     relationship = "many-to-many" )
 
 
-ggplot(richness_by_status,
-       aes(x = reorder(island, -Alien_richness),          # order islands by Alien richness (descending)
+ggplot(richness_by_status,                                 #•	This chart (absolute richness): highlights invasion load
+       aes(x = reorder(island, -Alien_richness),          # order islands by Alien richness (descending)         
            y = richness,
            fill = status)) +
   geom_bar(stat = "identity", position = "fill") +  
@@ -123,5 +123,78 @@ ggplot(richness_by_status,
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 90, hjust = 1))
 
+## Proportion stack bar → where aliens dominate (relative dominance)
+## Absolute richness stack bar → where most alien species are concentrated (absolute number of alien species).
 
+
+# model-based analysis:
+## use the fitted model to predict values for natives vs aliens across the area range.
+## this tests whether native vs alien richness respond differently to island area.
+
+## move toward a model (generalized linear mixed model (GLMM)):
+
+install.packages("glmmTMB")  
+library(glmmTMB)
+
+m <- glmmTMB(richness ~ log(area + 1) * status,                    #Response variable: richness.  #Predictors: log(area + 1).      #richness is predicted from island area (log-transformed), the species status (Native vs alien), and their interaction.
+             family = nbinom2,                                      # Here we are using glmmTMB to fit a negative binomial regression. Because species richness is count data and often overdispersed.
+             data = richness_by_status)
+
+
+summary(m)
+
+
+# Make predictions and compare with data:
+
+library(ggeffects)
+
+pred <- ggpredict(m, terms = c("area [all]", "status"))            # ggpredict() uses our model to calculate predicted richness values for a sequence of island areas, separately for aliens and natives.
+
+plot(pred)                                                       # it gives us values in the original richness scale (counts of species), and also computes confidence intervals.
+
+
+# overlay our data on this prediction:
+## to check how well predictions match your observed richness.
+## to combine raw data and predictions to see "How do my model predictions compare with the actual observed richness?"
+
+ggplot() +
+  geom_point(data = richness_by_status,
+             aes(x = area, y = richness, color = status),
+             alpha = 0.6, size = 3) +
+  geom_line(data = as.data.frame(pred),
+            aes(x = x, y = predicted, color = group),
+            size = 1.2) +
+  geom_ribbon(data = as.data.frame(pred),
+              aes(x = x, ymin = conf.low, ymax = conf.high, fill = group),
+              alpha = 0.2) +
+  scale_x_log10() +
+  labs(x = "Island area (km², log scale)",
+       y = "Species richness",
+       title = "model: Native and alien Richness across Islands") +
+  theme_minimal()
+
+
+## add names of islands and order islands by area:
+
+richness_by_status$island <- with(richness_by_status, reorder(island, area))
+
+ggplot() +                                                        
+  geom_point(data = richness_by_status,                             
+             aes(x = area, y = richness, color = status),
+             alpha = 0.6, size = 3) +
+  geom_line(data = as.data.frame(pred),                              
+            aes(x = x, y = predicted, color = group),                          # both the lines and the shaded ribbons are predicted.
+            size = 1.2) +
+  geom_ribbon(data = as.data.frame(pred),                        
+              aes(x = x, ymin = conf.low, ymax = conf.high, fill = group),
+              alpha = 0.2) +                         
+  scale_x_log10(
+    breaks = richness_by_status$area,
+    labels = richness_by_status$island
+  ) +
+  labs(x = "Island (log scale)",
+       y = "Species richness",
+       title = "model_ Richness across Islands") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
 
