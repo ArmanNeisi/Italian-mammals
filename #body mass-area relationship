@@ -1,0 +1,13 @@
+# body mass- area relationship:--------------------------------
+
+#libraries:
+install.packages("readxl")
+library(readxl)
+library(ggplot2)
+library(dplyr)
+
+#import database:
+data <- read_excel("F:/arman/bologna/me/thesis/checlists/final islands.xlsx")
+View(data)
+
+# trendlines:
