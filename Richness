@@ -126,6 +126,54 @@ ggplot(richness_by_status,                                 #•	This chart (abso
 ## Proportion stack bar → where aliens dominate (relative dominance)
 ## Absolute richness stack bar → where most alien species are concentrated (absolute number of alien species).
 
+## a side-by-side comparison plot:
+## Alien proportion (relative dominance) vs. Alien richness (absolute number of alien species):
+
+richness_by_status <- richness_by_status %>%                 # Add both alien richness and alien proportion into richness_by_status
+  left_join(
+    richness_wide %>% select(island, Alien_richness), 
+    by = "island", relationship = "many-to-many"
+  ) %>%
+  left_join(
+    alien_prop %>% select(island, alien_proportion), 
+    by = "island", relationship = "many-to-many"
+  )
+
+install.packages("gridExtra")
+library(gridExtra)
+
+plot_prop <- ggplot(richness_by_status,                              # Chart A: ordered by alien proportion
+                    aes(x = reorder(island, -alien_proportion),
+                        y = richness, fill = status)) +
+  geom_bar(stat = "identity", position = "fill") +
+  labs(
+    x = "Island (ordered by alien proportion)",
+    y = "Proportion of Species",
+    title = "Order by Alien Proportion"
+  ) +
+  scale_y_continuous(labels = scales::percent) +
+  scale_fill_manual(values = c("Alien" = "red", "Native" = "green")) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+plot_abs <- ggplot(richness_by_status,                            #Chart B: ordered by absolute alien richness
+                   aes(x = reorder(island, -Alien_richness),
+                       y = richness, fill = status)) +
+  geom_bar(stat = "identity", position = "fill") +
+  labs(
+    x = "Island (ordered by alien richness)",
+    y = "Proportion of Species",
+    title = "Order by Alien Richness"
+  ) +
+  scale_y_continuous(labels = scales::percent) +
+  scale_fill_manual(values = c("Alien" = "red", "Native" = "green")) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+grid.arrange(plot_prop, plot_abs, ncol = 2)     #Combine them side by side
+
+
+
 
 # model-based analysis:
 ## use the fitted model to predict values for natives vs aliens across the area range.
