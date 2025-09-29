@@ -31,17 +31,18 @@ library(vegan)
 
 nested_all <- nestednodf(community_matrix)
 nested_all
-## NODF : 53.12      overall nestedness index (% scale, 0–100)
-## our mammal community shows moderate nestedness (NODF ≈ 53)
+## N columns  : 59.6117   ##How much species’ distributions across islands are nested.
+## N rows     : 51.99205    ## How much the island communities themselves form subsets of one another.
+## NODF       : 53.79447    ## overall nestedness index (% scale, 0–100); our mammal community shows moderate nestedness (NODF ≈ 59.6), meaning the system has some order (nestedness), but also randomness, 
 
 
 # Repeat nestedness for Natives and aliens:
 
 # 1. Natives:
-### Filter your dataset by status:
+## Filter your dataset by status:
+
 Native_data <- subset(data, status == "Native")
 Native_matrix <- dcast(Native_data, island ~ species, value.var = "presence", fun.aggregate = length, fill = 0)
-
 rownames(Native_matrix) <- Native_matrix$island
 Native_matrix <- as.matrix(Native_matrix[, -1])
 nested_Native <- nestednodf(Native_matrix)
@@ -57,9 +58,11 @@ nested_alien <- nestednodf(alien_matrix)
 nested_alien
 
 ## comparision nestedness:
-## Natives > Aliens in nestedness (54 vs 47): Native communities are more structured by area/biogeography: small islands are subsets of larger islands.
+## Natives > Aliens in nestedness(NODF) (54 vs 46): Native communities are more structured by area/biogeography: small islands are subsets of larger islands.
 ## Nestedness highlights that Natives are shaped by “natural” biogeographic filters, while aliens are shaped by “anthropogenic” processes.
 ## Aliens have lower fill (10% vs 18%):  Fewer alien species occur across the islands, and they are patchier in distribution.
+# N columns for native > for alien: species distributions are fairly nested. aliens are not as consistently nested.
+# N rows for natives > for alien: islands themselves also follow a nested order (species-poor islands ≈ subsets of species-rich islands). alien assemblages across islands are somewhat nested, but weaker than natives.
 
 
 # significance test (permutation/randomization):
