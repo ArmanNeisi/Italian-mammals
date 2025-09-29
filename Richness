@@ -62,4 +62,66 @@ ggplot(richness_by_status, aes(x = reorder(island, area), y = richness, fill = s
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 90, hjust = 1))
 
-# lets # sort highest alien proportion first, so invasion hotspots are at the left.
+
+# lets sort highest alien proportion first, so invasion hotspots are at the left:
+## to calculate alien proportion per island
+
+alien_prop <- richness_wide %>%                               #Now alien_prop has, for each island: “Native_richness”, “Alien_richness”, “total_richness”, “alien_proportion"    # Calculates how many alien species relative to total per island.
+  mutate(                                                      
+total_richness = Native_richness +Alien_richness,                       # total species richness (native + alien)
+alien_proportion = Alien_richness / total_richness)                     # proportion of alien species per island
+
+
+richness_by_status <- richness_by_status %>%                       # Merging this back into your long-format table (“richness_by_status”), by adding the “alien proportion”.
+  left_join(
+    alien_prop %>% select(island, alien_proportion),
+    by = "island",
+    relationship = "many-to-many")
+
+
+ggplot(richness_by_status,                                    #Plot with islands reordered by alien proportion
+       aes(x = reorder(island, -alien_proportion),               #islands ordered by alien proportion (descending)
+           y = richness,
+           fill = status)) +
+  geom_bar(stat = "identity", position = "fill") +  
+  labs(
+    x = "Island (ordered by alien proportion)",
+    y = "Proportion of Species",                                            
+    title = "Proportion of Alien vs Native Species per Island"
+  ) +
+  scale_y_continuous(labels = scales::percent) +                                    #convert y-axis to %
+  scale_fill_manual(values = c("Alien" = "red", "Native" = "green")) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) 
+
+## in this chart, Bars are ordered by highest alien proportion first (true invasion hotspots on the left).
+
+
+# absolute alien richness bar chart:
+## Reorder islands by absolute alien richness
+## to highlight islands that have the largest number of alien species
+
+richness_by_status <- richness_by_status %>%                    # Add absolute alien richness into richness_by_status
+  left_join(
+    richness_wide %>% select(island, Alien_richness),
+    by = "island",
+    relationship = "many-to-many" )
+
+
+ggplot(richness_by_status,
+       aes(x = reorder(island, -Alien_richness),          # order islands by Alien richness (descending)
+           y = richness,
+           fill = status)) +
+  geom_bar(stat = "identity", position = "fill") +  
+  labs(
+    x = "Island (ordered by alien richness)",
+    y = "richness of Species",
+    title = "richness of Alien vs Native Species per Island (Ordered by Alien Richness)"
+  ) +
+  scale_y_continuous(labels = scales::percent) +    
+  scale_fill_manual(values = c("Alien" = "red", "Native" = "green")) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+
+
