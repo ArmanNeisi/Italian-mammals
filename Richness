@@ -187,7 +187,9 @@ grid.arrange(plot_prop, plot_abs, ncol = 2)     #Combine them side by side
 
 
 
+
 # model-based analysis:
+
 ## use the fitted model to predict values for natives vs aliens across the area range.
 ## this tests whether native vs alien richness respond differently to island area.
 
