@@ -2,7 +2,7 @@
 # Body Size Distributions: ----------------------
 # =========================================================
 
-### Look at the overall distribution of body sizes across islands.
+### Look at the overall distribution of body sizes.
 
 # libraries:
 install.packages("readxl")
