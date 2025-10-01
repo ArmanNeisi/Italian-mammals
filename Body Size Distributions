@@ -99,3 +99,9 @@ ggplot(island_df, aes(x = log_area)) +
   labs(x = "Log10 Island area",
        y = "Density",
        title = "Density distribution of island areas")
+
+
+# =========================================================
+# island area distribution by species status:--------------------
+# =========================================================
+
