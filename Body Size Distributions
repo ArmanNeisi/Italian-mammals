@@ -78,4 +78,24 @@ ggplot(mammals_unique, aes(x = log10(body_mass))) +
 #distribution of island sizes:------------------
 # =========================================================
 
+# 1. Create a unique island dataframe:
+island_df <- data %>%
+  distinct(island, area) %>%                # keep only one row per island
+  mutate(log_area = log10(area))             # log-transform area for better visualization
 
+
+# 2. Plot histogram of island areas:
+ggplot(island_df, aes(x = log_area)) +
+  geom_histogram(bins = 20, fill = "darkgreen", alpha = 0.7) +
+  theme_minimal() +
+  labs(x = "Log10 Island area",
+       y = "Number of islands",
+       title = "Frequency distribution of island areas")
+
+# 3. density plot
+ggplot(island_df, aes(x = log_area)) +
+  geom_density(fill = "darkgreen", alpha = 0.5) +
+  theme_minimal() +
+  labs(x = "Log10 Island area",
+       y = "Density",
+       title = "Density distribution of island areas")
