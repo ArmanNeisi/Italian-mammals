@@ -86,9 +86,9 @@ island_df <- data %>%
 
 # 2. Plot histogram of island areas:
 ggplot(island_df, aes(x = log_area)) +
-  geom_histogram(bins = 20, fill = "darkgreen", alpha = 0.7) +
+  geom_histogram(breaks = breaks, fill = "darkgreen", alpha = 0.7) +
   theme_minimal() +
-  labs(x = "Log10 Island area",
+  labs(x = "Log10 Island area (km²)",
        y = "Number of islands",
        title = "Frequency distribution of island areas")
 
@@ -118,13 +118,16 @@ island_status <- island_status %>%
                                      by = 0.2)))
 
 ## Count number of islands per area bin and status
-area_dist_status <- island_status %>%
-  group_by(area_bin, status) %>%
-  summarise(n_islands = n_distinct(island), .groups = "drop")
+area_dist_status <- data %>%
+  distinct(island, area, status) %>%
+  mutate(log_area = log10(area),
+         area_bin = cut(log_area, breaks = breaks)) %>%
+  filter(!is.na(area_bin))   # remove NA bins
 
 ## Plot stacked bar chart
-ggplot(area_dist_status, aes(x = area_bin, y = n_islands, fill = status)) +
-  geom_bar(stat = "identity", position = "stack") +
+
+ggplot(area_dist_status, aes(x = area_bin, y = ..count.., fill = status)) +
+  geom_bar(position = "dodge") +
   theme_minimal() +
   labs(x = "Island area bin (log10 scale)",
        y = "Number of islands",
@@ -136,6 +139,34 @@ ggplot(area_dist_status, aes(x = area_bin, y = n_islands, fill = status)) +
 
 
 
-some question:
-why area bins are different in stacked bar chart and histogram?
-why there is NA area bin in stacked bar? why just in this plot?
+
+# Island areas by species status (counts + % labels):
+
+library(dplyr)
+library(ggplot2)
+library(ggrepel)
+
+## Prepare percentages per bin
+area_dist_pct <- area_dist_status %>%
+  count(area_bin, status) %>%
+  group_by(area_bin) %>%
+  mutate(pct = n / sum(n) * 100,
+         label = paste0(round(pct, 1), "%")) %>%
+  ungroup()
+
+## Stacked bar chart (counts) with ggrepel labels
+ggplot(area_dist_pct, aes(x = area_bin, y = n, fill = status)) +
+  geom_bar(stat = "identity", position = "stack") +   # stacked counts
+  geom_text_repel(aes(label = label), 
+                  position = position_stack(vjust = 0.5), # place inside stack
+                  size = 3, color = "black", 
+                  max.overlaps = 50, box.padding = 0.2) +
+  theme_minimal() +
+  labs(x = "Island area bin (log10 scale)",
+       y = "Number of islands",
+       title = "Island areas by species status (counts + % labels)") +
+  scale_fill_manual(values = c("Native" = "steelblue",
+                               "Alien" = "tomato",
+                               "doubt (type)" = "gold")) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
