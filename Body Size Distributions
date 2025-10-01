@@ -105,3 +105,37 @@ ggplot(island_df, aes(x = log_area)) +
 # island area distribution by species status:--------------------
 # =========================================================
 
+## Make sure we have unique island-status combinations
+island_status <- data %>%
+  distinct(island, area, status)
+
+## Create log-transformed island area bins
+island_status <- island_status %>%
+  mutate(log_area = log10(area),
+         area_bin = cut(log_area,
+                        breaks = seq(floor(min(log_area, na.rm = TRUE)),
+                                     ceiling(max(log_area, na.rm = TRUE)),
+                                     by = 0.2)))
+
+## Count number of islands per area bin and status
+area_dist_status <- island_status %>%
+  group_by(area_bin, status) %>%
+  summarise(n_islands = n_distinct(island), .groups = "drop")
+
+## Plot stacked bar chart
+ggplot(area_dist_status, aes(x = area_bin, y = n_islands, fill = status)) +
+  geom_bar(stat = "identity", position = "stack") +
+  theme_minimal() +
+  labs(x = "Island area bin (log10 scale)",
+       y = "Number of islands",
+       title = "Distribution of island areas by species status") +
+  scale_fill_manual(values = c("Native" = "steelblue",
+                               "Alien" = "tomato",
+                               "doubt (type)" = "gold")) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+
+some question:
+why area bins are different in stacked bar chart and histogram?
+why there is NA area bin in stacked bar? why just in this plot?
