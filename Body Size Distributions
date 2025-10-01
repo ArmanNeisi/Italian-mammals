@@ -1,4 +1,8 @@
+# =========================================================
 # Body Size Distributions: ----------------------
+# =========================================================
+
+### Look at the overall distribution of body sizes across islands.
 
 # libraries:
 install.packages("readxl")
@@ -9,5 +13,69 @@ library(dplyr)
 #import database:
 data <- read_excel("F:/arman/bologna/me/thesis/checlists/final islands.xlsx")
 View(data)
+
+
+## Species frequency distribution:
+
+# 1. histogram:
+## keep only one row per species
+
+mammals_unique <- data %>% distinct(species, .keep_all = TRUE)
+ggplot(mammals_unique, aes(x = body_mass)) +
+  geom_histogram(bins = 30, fill = "skyblue", color = "black") +
+  scale_x_log10() +
+  labs(title = "Histogram of Body Mass distribution",
+       x = "Body Mass (g, log10 scale)",
+       y = "Count of species") +
+  theme_minimal()
+
+# 2. boxplot:
+## keep only one row per species
+mammals_unique <- data %>% distinct(species, .keep_all = TRUE)
+
+ggplot(mammals_unique, aes(y = body_mass)) +
+  geom_boxplot(fill = "green", width = 0.2, outlier.shape = 21, outlier.alpha = NA) +
+  geom_jitter(width = 0.1, alpha = 0.6, color = "black") +
+  scale_y_log10() +
+  labs(title = "Boxplot of Body Mass distribution",
+       y = "Body Mass (g, log10 scale)",
+x = "") +
+  theme_minimal()
+
+# highlight the extreme species (min & max body mass):
+install.packages("ggrepel")
+library(ggrepel)
+
+mammals_unique <- data %>% distinct(species, .keep_all = TRUE)
+
+extremes <- mammals_unique %>%                   ## find the min and max body mass species:
+  filter(body_mass == min(body_mass) | body_mass == max(body_mass))
+
+ggplot(mammals_unique, aes(x = "", y = body_mass)) +
+  geom_boxplot(fill = "green", width = 0.2, outlier.shape = NA) +
+  geom_jitter(width = 0.1, alpha = 0.6, color = "black") +
+  geom_text_repel(data = extremes,
+                  aes(label = species),
+                  nudge_x = 0.3, # push labels to the right
+                  size = 3,
+                  color = "red") +
+  scale_y_log10() +
+  labs(title = "Boxplot of Body Mass (all mammal species)",
+       y = "Body Mass (g, log10 scale)",
+       x = "") +
+  theme_minimal()
+
+#3. smooth density:
+ggplot(mammals_unique, aes(x = log10(body_mass))) +
+  geom_density(fill = "steelblue", alpha = 0.5) +
+  theme_minimal() +
+  labs(x = "Log10 Body mass",
+       y = "Density",
+       title = "Body size distribution of species (density)")
+
+
+# =========================================================
+#distribution of island sizes:------------------
+# =========================================================
 
 
