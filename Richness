@@ -113,24 +113,23 @@ ggplot(richness_by_status,                                    #Plot with islands
 ## Reorder islands by absolute alien richness
 ## to highlight islands that have the largest number of alien species
 
-richness_by_status <- richness_by_status %>%                    # Add absolute alien richness into richness_by_status
-  left_join(
-    richness_wide %>% select(island, Alien_richness),
-    by = "island",
-    relationship = "many-to-many" )
+order_by_alien <- richness_wide %>%                         # Add absolute alien richness into richness_by_status
+  arrange(desc(Alien_richness)) %>%
+  distinct(island, .keep_all = TRUE) %>%   # keep each island only once
+  pull(island)
 
-
-ggplot(richness_by_status,                                 #•	This chart (absolute richness): highlights invasion load
-       aes(x = reorder(island, -Alien_richness),          # order islands by Alien richness (descending)         
+#	This chart (absolute richness): highlights invasion load
+ggplot(richness_by_status,
+       aes(x = factor(island, levels = order_by_alien),   # order islands uniquely
            y = richness,
            fill = status)) +
-  geom_bar(stat = "identity", position = "fill") +  
+  geom_bar(stat = "identity", position = "stack") +       # stacked absolute counts
   labs(
     x = "Island (ordered by alien richness)",
-    y = "richness of Species",
-    title = "richness of Alien vs Native Species per Island (Ordered by Alien Richness)"
+    y = "Species Richness (count)",
+    title = "Alien vs Native Species Richness per Island (Ordered by Alien Richness)"
   ) +
-  scale_y_continuous(labels = scales::percent) +    
+  scale_y_continuous(labels = scales::comma) +            # plain counts on y-axis
   scale_fill_manual(values = c("Alien" = "red", "Native" = "green")) +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 90, hjust = 1))
@@ -141,22 +140,14 @@ ggplot(richness_by_status,                                 #•	This chart (abso
 ## a side-by-side comparison plot:
 ## Alien proportion (relative dominance) vs. Alien richness (absolute number of alien species):
 
-richness_by_status <- richness_by_status %>%                 # Add both alien richness and alien proportion into richness_by_status
-  left_join(
-    richness_wide %>% select(island, Alien_richness), 
-    by = "island", relationship = "many-to-many"
-  ) %>%
-  left_join(
-    alien_prop %>% select(island, alien_proportion), 
-    by = "island", relationship = "many-to-many"
-  )
-
 install.packages("gridExtra")
 library(gridExtra)
 
-plot_prop <- ggplot(richness_by_status,                              # Chart A: ordered by alien proportion
+## --- Chart A: Proportion of Alien vs Native Species per Island ---
+plot_prop <- ggplot(richness_by_status,
                     aes(x = reorder(island, -alien_proportion),
-                        y = richness, fill = status)) +
+                        y = richness,
+                        fill = status)) +
   geom_bar(stat = "identity", position = "fill") +
   labs(
     x = "Island (ordered by alien proportion)",
@@ -168,22 +159,26 @@ plot_prop <- ggplot(richness_by_status,                              # Chart A: 
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 90, hjust = 1))
 
-plot_abs <- ggplot(richness_by_status,                            #Chart B: ordered by absolute alien richness
-                   aes(x = reorder(island, -Alien_richness),
-                       y = richness, fill = status)) +
-  geom_bar(stat = "identity", position = "fill") +
+
+## --- Chart B: Absolute richness stacked bar chart ---
+plot_abs <- ggplot(richness_by_status,
+                   aes(x = factor(island, levels = order_by_alien),
+                       y = richness,
+                       fill = status)) +
+  geom_bar(stat = "identity", position = "stack") +
   labs(
     x = "Island (ordered by alien richness)",
-    y = "Proportion of Species",
+    y = "Species Richness (count)",
     title = "Order by Alien Richness"
   ) +
-  scale_y_continuous(labels = scales::percent) +
+  scale_y_continuous(labels = scales::comma) +
   scale_fill_manual(values = c("Alien" = "red", "Native" = "green")) +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 90, hjust = 1))
 
-grid.arrange(plot_prop, plot_abs, ncol = 2)     #Combine them side by side
 
+## --- Combine plots side by side using gridExtra ---
+grid.arrange(plot_prop, plot_abs, ncol = 2)
 
 
 
