@@ -134,6 +134,32 @@ ggplot(richness_by_status,
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 90, hjust = 1))
 
+
+## Add text labels for Alien richness only
+ggplot(richness_by_status,
+       aes(x = factor(island, levels = order_by_alien),
+           y = richness,
+           fill = status)) +
+  geom_bar(stat = "identity", position = "stack") +
+geom_text(
+  data = subset(richness_by_status, status == "Alien"),   # only alien rows
+  aes(label = richness),                                  # show alien richness numbers
+  position = position_stack(vjust = 1),                 # center within red bar
+  color = "black",                                        # text color (contrast on red)
+  size = 3
+) +
+  
+  labs(
+    x = "Island (ordered by alien richness)",
+    y = "Species Richness (count)",
+    title = "Alien vs Native Species Richness per Island (Ordered by Alien Richness)"
+  ) +
+  scale_y_continuous(labels = scales::comma) +
+  scale_fill_manual(values = c("Alien" = "red", "Native" = "green")) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+
 ## Proportion stack bar → where aliens dominate (relative dominance)
 ## Absolute richness stack bar → where most alien species are concentrated (absolute number of alien species).
 
