@@ -13,7 +13,6 @@ View(data)
 
 
 # raw species–island–status data:
-
 filtered_data <- data %>%
   filter(status %in% c("Native", "Alien"))
 
@@ -49,8 +48,7 @@ write.csv(richness_wide, "Native_vs_Alien_richness_per_island.csv", row.names = 
 
 # Visualizing raw patterns:
 
-# make Bar Plot for richness per island
-
+# make Bar Plot for richness per island:
 ggplot(richness_by_status, aes(x = reorder(island, area), y = richness, fill = status)) +               # x = reorder(island, area): set the islands (on x-axis) based on their area, ascending
   geom_bar(stat = "identity", position = "dodge") +                       
   labs(
@@ -60,7 +58,7 @@ ggplot(richness_by_status, aes(x = reorder(island, area), y = richness, fill = s
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 
-# Stacked Bar Chart or proportional bar chart 
+# Stacked Bar Chart or proportional bar chart:
 ## to compute proportion alien/native per island (alien richness ÷ total richness) to highlight invasion intensity
 
 ggplot(richness_by_status, aes(x = reorder(island, area), y = richness, fill = status)) +                      #This shows the total species richness per island, with native and alien stacked.
@@ -82,7 +80,6 @@ alien_prop <- richness_wide %>%                               #Now alien_prop ha
   mutate(                                                      
 total_richness = Native_richness +Alien_richness,                       # total species richness (native + alien)
 alien_proportion = Alien_richness / total_richness)                     # proportion of alien species per island
-
 
 richness_by_status <- richness_by_status %>%                       # Merging this back into your long-format table (“richness_by_status”), by adding the “alien proportion”.
   left_join(
@@ -163,7 +160,8 @@ geom_text(
 ## Proportion stack bar → where aliens dominate (relative dominance)
 ## Absolute richness stack bar → where most alien species are concentrated (absolute number of alien species).
 
-## a side-by-side comparison plot:
+
+# a side-by-side comparison plot:
 ## Alien proportion (relative dominance) vs. Alien richness (absolute number of alien species):
 
 install.packages("gridExtra")
@@ -185,7 +183,6 @@ plot_prop <- ggplot(richness_by_status,
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 90, hjust = 1))
 
-
 ## --- Chart B: Absolute richness stacked bar chart ---
 plot_abs <- ggplot(richness_by_status,
                    aes(x = factor(island, levels = order_by_alien),
@@ -201,7 +198,6 @@ plot_abs <- ggplot(richness_by_status,
   scale_fill_manual(values = c("Alien" = "red", "Native" = "green")) +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 90, hjust = 1))
-
 
 ## --- Combine plots side by side using gridExtra ---
 grid.arrange(plot_prop, plot_abs, ncol = 2)
@@ -223,18 +219,14 @@ m <- glmmTMB(richness ~ log(area + 1) * status,                    #Response var
              family = nbinom2,                                      # Here we are using glmmTMB to fit a negative binomial regression. Because species richness is count data and often overdispersed.
              data = richness_by_status)
 
-
 summary(m)
 
 
 # Make predictions and compare with data:
 
 library(ggeffects)
-
 pred <- ggpredict(m, terms = c("area [all]", "status"))            # ggpredict() uses our model to calculate predicted richness values for a sequence of island areas, separately for aliens and natives.
-
 plot(pred)                                                       # it gives us values in the original richness scale (counts of species), and also computes confidence intervals.
-
 
 # overlay our data on this prediction:
 ## to check how well predictions match your observed richness.
