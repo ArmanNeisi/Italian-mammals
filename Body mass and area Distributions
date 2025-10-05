@@ -2,8 +2,6 @@
 # Body Size Distributions: ----------------------
 # =========================================================
 
-### Look at the overall distribution of body sizes.
-
 # libraries:
 install.packages("readxl")
 library(readxl)
@@ -15,7 +13,82 @@ data <- read_excel("F:/arman/bologna/me/thesis/checlists/final islands.xlsx")
 View(data)
 
 
-## Species frequency distribution:
+
+# Frequency Across Islands:
+## how body sizes are distributed in terms of geographic presence.
+
+install.packages("tidyverse")
+library(tidyverse)
+
+# 1. by islands:
+## which body sizes are geographically widespread vs rare (ignores species status)
+
+df <- data %>%                             ## Log-transform body mass for binning
+  mutate(log_body_mass = log10(body_mass),
+         body_bin = cut(log_body_mass,
+                        breaks = seq(floor(min(log_body_mass)),
+                                     ceiling(max(log_body_mass)),
+                                     by = 0.2)))            #we divide the log-transformed body mass into bins of width 0.2. A bin is simply a range of values into which continuous data is grouped.
+
+size_islands <- df %>%                    #### Count number of islands per body size bin
+  group_by(body_bin) %>%
+  summarise(n_islands = n_distinct(island)) %>%
+  ungroup()
+
+ggplot(size_islands, aes(x = body_bin, y = n_islands)) +      ## Plot number of islands per body size bin
+  geom_bar(stat = "identity", fill = "forestgreen") +
+  theme_minimal() +
+  labs(x = "Body mass (log10 scale)",
+       y = "Number of islands",
+       title = "Widespread vs rare body sizes by island presence") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+# 2. By islands + grouped by status:
+
+## number of islands per body size bin and per status (Native, alien, doubt).
+## compares which body sizes are widespread for each status, and how much each status contributes.
+
+df <- data %>%          ## Log-transform body mass and create bins
+  mutate(log_body_mass = log10(body_mass),
+         body_bin = cut(log_body_mass,
+                        breaks = seq(floor(min(log_body_mass)),
+                                     ceiling(max(log_body_mass)),
+                                     by = 0.2)))
+
+size_islands_status <- df %>%           ## Count number of islands per body size bin by status
+  group_by(body_bin, status) %>%
+  summarise(n_islands = n_distinct(island)) %>%
+  ungroup()
+
+## Plot number of islands per bin with species status (stacked version):
+
+ggplot(size_islands_status, aes(x = body_bin, y = n_islands, fill = status)) +
+geom_bar(stat = "identity", position = "stack") +
+  theme_minimal() +
+  labs(x = "Body mass bin (log10 scale)",
+       y = "Number of islands",
+       title = "Widespread vs rare body sizes (stacked by species status)") +
+  scale_fill_manual(values = c("Native" = "steelblue",
+                               "Alien" = "tomato",
+                               "doubt (type)" = "gold")) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+#3. Density plot of body sizes, weighted by number of islands
+ggplot(data, aes(x = log10(body_mass), fill = status)) +
+  geom_density(alpha = 0.5) +
+  theme_minimal() +
+  labs(x = "Log10 Body mass",
+       y = "Density (weighted by island presence)",
+       title = "body sizes, weighted by number of islands")
+
+  
+
+#####------------------
+
+# Species frequency distribution:
+## Species-level body size distribution
 
 # 1. histogram:
 ## keep only one row per species
