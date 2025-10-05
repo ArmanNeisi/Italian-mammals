@@ -10,6 +10,7 @@ library(dplyr)
 data <- read_excel("F:/arman/bologna/me/thesis/checlists/final islands.xlsx")
 View(data)
 
+
 # plot in linear model:
 
 ggplot(data, aes(x = area, y = body_mass, color = status)) +
@@ -34,86 +35,89 @@ ggplot(data, aes(x = area, y = body_mass, color = status)) +
 
 
 #######################
-#comparison of LM (linear model) with GLMM:
-##to decide between LM vs GLMM for our body mass-island area analysis.
+#check model assumptions (diagnostics):
 
-## Linear Model (LM):
-m_lm <- lm(log(body_mass) ~ log(area) * status, data = data)
+# 1. Log-transform variables
+data$log_body_mass <- log(data$body_mass)
+data$log_area <- log(data$area)
 
-## Mixed Model (GLMM / LMM since body mass is continuous)
-install.packages("lme4")
-library(lme4)
-m_glmm <- lmer(log(body_mass) ~ log(area) * status + (1|species) + (1|island),
-               data = data)
+# 2. Fit linear model
+m <- lm(log_body_mass ~ log_area * status, data = data)
 
-## Compare with a Likelihood Ratio Test (LRT)
-anova(m_lm, m_glmm)
+# 3. Summary of coefficients
+summary(m)
 
-## Compare using AIC
-AIC(m_lm, m_glmm)
+# 4. Diagnostics
+par(mfrow = c(2,2))
+plot(m)    # residuals vs fitted, QQ-plot, etc
 
-## summary:
-summary(m_glmm)
+# examine our four diagnostic plots
+#1.Linearity: Residuals cluster at certain fitted values (No strong curve)
+#2. Homoscedasticity: The line is fairly flat → homoscedasticity looks okay.
+#3. Normality: The middle fits well, but both tails deviate strongly (curved away).
+#4. Influence: no catastrophic outliers, but some species are influential (worth checking which ones).
 
 ################################
 
-#body mass-area relationship using GLMM (Generalized linear mixed model):
-## Native vs Alien species
+# log–log predictions + ribbons:
 
-# Load packages:
-install.packages("merTools")
-library(lme4)
-library(lmerTest)   # for p-values
-library(merTools)   # for predictions with CIs
-library(ggplot2)
+library(ggeffects)
 
-# 1. Prepare data:
-## log-transform response and predictor
-data2$log_body_mass <- log(data2$body_mass)
-data2$log_area <- log(data2$area)
+# 1. Prepare the data -------------------------
+# log-transform body mass and area
+data$log_body_mass <- log(data$body_mass)
+data$log_area <- log(data$area)
 
-# 2. Fit the model (linear model, no random effect)
-model1 <- lm(log_body_mass ~ log_area * status, data = data2)
+# Make sure status is a factor (important!)
+data$status <- as.factor(data$status)
 
-# Look at summary (slopes, interaction, etc.)
-summary(model1)
+# 2. Fit the linear model ---------------------
+m_lm <- lm(log_body_mass ~ log_area * status, data = data)
 
-# 3. Build new data for predictions
-newdata <- expand.grid(
-  log_area = seq(min(data2$log_area), max(data2$log_area), length.out = 100),
-  status = levels(data2$status)
-)
+# Model summary (slopes, intercepts, interaction)
+summary(m_lm)
 
-data2$status <- factor(data2$status)
+# 3. Predictions with ggeffects ---------------
+# Keep predictions on the log scale
+pred_mass <- ggpredict(m_lm, terms = c("log_area [all]", "status"), back.transform = FALSE)
 
-## Predict with standard errors
-preds <- predict(model1, newdata, se.fit = TRUE)
+# 4. Plot results -----------------------------
+ggplot() +
+  # Raw data points
+  geom_point(data = data,
+             aes(x = log_area, y = log_body_mass, color = status),
+             size = 2, alpha = 0.6) +
+  
+  # Prediction lines
+  geom_line(data = as.data.frame(pred_mass),
+            aes(x = x, y = predicted, color = group),
+            linewidth = 1.2) +
+  
+  # Confidence ribbons
+  geom_ribbon(data = as.data.frame(pred_mass),
+              aes(x = x, ymin = conf.low, ymax = conf.high, fill = group),
+              alpha = 0.2, inherit.aes = FALSE) +
+  
+  # Labels and theme
+  labs(
+    x = "Island area (log km²)",
+    y = "Body mass (log g)",
+    title = "Body Mass – Island Area Relationship",
+    color = "Status", fill = "Status"
+  ) +
+  theme_minimal(base_size = 14)
 
-newdata$pred <- preds$fit
-newdata$se <- preds$se.fit
+####-----------
+# extract slopes:
 
-# 4. Back-transform predictions:
-## from log to original body mass
-newdata$pred_body_mass  <- exp(newdata$pred)
-newdata$upper_body_mass <- exp(newdata$pred + 1.96 * newdata$se)
-newdata$lower_body_mass <- exp(newdata$pred - 1.96 * newdata$se)
+## Summary of coefficients
+coef(summary(m_lm))
 
-## back-transform x (area)
-newdata$area <- exp(newdata$log_area)
+## Aliens (baseline slope)
+z_alien <- coef(m_lm)["log_area"]
 
-# 5. Plot
-ggplot(data2, aes(x = area, y = body_mass, color = status)) +
-  geom_point(size = 2.5, alpha = 0.7) +
-  geom_ribbon(data = newdata,
-              aes(x = area, ymin = lower_body_mass, ymax = upper_body_mass, fill = status),
-              alpha = 0.2, color = NA, inherit.aes = FALSE) +
-  geom_line(data = newdata,
-            aes(x = area, y = pred_body_mass, color = status),
-            linewidth = 1.1, inherit.aes = FALSE) +
-  scale_x_continuous(trans = "log10") +
-  scale_y_continuous(trans = "log10") +
-  labs(title = "Body mass- Island area relationship (GLMM)",
-x = "Island area", y = "Body mass", color = "Origin", fill = "Origin") +
-  theme_minimal(base_size = 14) +
-  theme(legend.position = "top")
+## Natives (slope = baseline + interaction)
+z_native <- coef(m_lm)["log_area"] + coef(m_lm)["log_area:statusNative"]
 
+# Print them
+z_alien; z_native;
